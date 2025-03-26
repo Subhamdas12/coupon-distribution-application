@@ -1,10 +1,29 @@
-import React from "react";
-
+import React, { useEffect } from "react";
+import Navbar from "../components/Navbar";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getAllCouponClaimsAsync,
+  getAllCouponsAsync,
+  selectCouponClaims,
+  selectCoupons,
+} from "../features/coupon/couponSlice";
 const Dashboard = () => {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(getAllCouponClaimsAsync());
+    dispatch(getAllCouponsAsync());
+  }, [dispatch]);
+
+  const coupons = useSelector(selectCoupons);
+
+  const couponClaims = useSelector(selectCouponClaims);
+  console.log(coupons);
   return (
     <main className="flex-1 p-6 pt-16 md:pt-6">
+      <Navbar />
+      <div className="mb-3"></div>
       <div className="space-y-6">
-        <div>
+        <div className="text-left">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
             Overview of your coupon management system
@@ -12,21 +31,21 @@ const Dashboard = () => {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[
-            { title: "Total Coupons", value: 24, change: "+2 from last month" },
+            {
+              title: "Total Coupons",
+              value: coupons.length,
+            },
             {
               title: "Active Coupons",
-              value: 18,
-              change: "75% of total coupons",
+              value: coupons.filter((coupon) => coupon.isActive).length,
+            },
+            {
+              title: "InActive coupons Users",
+              value: coupons.filter((coupon) => !coupon.isActive).length,
             },
             {
               title: "Total Claims",
-              value: 342,
-              change: "+18% from last month",
-            },
-            {
-              title: "Active Users",
-              value: 573,
-              change: "+201 from last month",
+              value: couponClaims.length,
             },
           ].map((stat, index) => (
             <div
@@ -54,47 +73,27 @@ const Dashboard = () => {
               Latest coupon claims and updates
             </p>
             <div className="space-y-4 mt-4">
-              {[
-                {
-                  user: "john.doe@example.com",
-                  action: "claimed coupon SUMMER25",
-                  time: "30 minutes ago",
-                },
-                {
-                  user: "admin@example.com",
-                  action: "created coupon FLASH15",
-                  time: "about 2 hours ago",
-                },
-                {
-                  user: "admin@example.com",
-                  action: "updated coupon WELCOME10",
-                  time: "about 5 hours ago",
-                },
-                {
-                  user: "jane.smith@example.com",
-                  action: "claimed coupon WELCOME10",
-                  time: "about 8 hours ago",
-                },
-                {
-                  user: "admin@example.com",
-                  action: "disabled coupon EXPIRED20",
-                  time: "1 day ago",
-                },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-start gap-4">
-                  <div className="h-8 w-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700">
-                    {activity.user[0].toUpperCase()}
+              {couponClaims &&
+                couponClaims.map((couponClaim, index) => (
+                  <div key={index} className="flex items-start gap-4 text-left">
+                    <div className="h-8 w-8 flex items-center justify-center rounded-full bg-gray-200 text-gray-700">
+                      {couponClaim.ipAddress}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium leading-none">
+                        IP {couponClaim.ipAddress} with sessionId{" "}
+                        {couponClaim.sessionId} {couponClaim.status}{" "}
+                        {couponClaim.Coupon.couponCode}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        at{" "}
+                        {new Date(couponClaim.claimedAt).toLocaleDateString(
+                          "en-GB"
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium leading-none">
-                      {activity.user} {activity.action}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
@@ -105,38 +104,30 @@ const Dashboard = () => {
               Coupons that will expire in the next 7 days
             </p>
             <div className="space-y-4 mt-4">
-              {[
-                {
-                  name: "SUMMER25",
-                  discount: "25% off",
-                  expiry: "Expires in 2 days",
-                },
-                {
-                  name: "FLASH15",
-                  discount: "15% off",
-                  expiry: "Expires in 3 days",
-                },
-                {
-                  name: "WELCOME10",
-                  discount: "10% off",
-                  expiry: "Expires in 5 days",
-                },
-              ].map((coupon, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div>
-                    <div className="font-medium">{coupon.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {coupon.discount}
+              {coupons &&
+                coupons
+                  .sort(
+                    (a, b) =>
+                      new Date(b.expirationDate) - new Date(a.expirationDate)
+                  )
+                  .map((coupon, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between rounded-lg border p-3"
+                    >
+                      <div>
+                        <div className="font-medium">{coupon.couponCode}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {coupon.discount}
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium text-orange-500">
+                        {new Date(coupon.expirationDate).toLocaleDateString(
+                          "en-GB"
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-sm font-medium text-orange-500">
-                    {coupon.expiry}
-                  </div>
-                </div>
-              ))}
+                  ))}
             </div>
           </div>
         </div>
