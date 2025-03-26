@@ -105,7 +105,7 @@ const Dashboard = () => {
             </p>
             <div className="space-y-4 mt-4">
               {coupons &&
-                coupons
+                [...coupons]
                   .sort(
                     (a, b) =>
                       new Date(b.expirationDate) - new Date(a.expirationDate)
